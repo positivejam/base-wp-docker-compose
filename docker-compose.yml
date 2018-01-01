@@ -1,0 +1,43 @@
+# credit to Peter Suhm, https://wppusher.com/blog/the-easiest-way-to-use-docker-for-wordpress-development/
+version: '2'
+
+services:
+   # on the WP Mail SMTP plugin settings, "SMTP Host" should be set to "mailslurper" since that's the name of the service here
+   mailslurper:
+     image: marcopas/docker-mailslurper
+     ports:
+       - 2500:2500
+       - 8080:8080
+       - 8085:8085
+     volumes:
+       - $PWD/custom-config.json:/opt/mailslurper/config.json
+   db:
+     image: mysql:5.6
+     volumes:
+       - email_verification_db:/var/lib/mysql
+     restart: always
+     environment:
+       MYSQL_ROOT_PASSWORD: wordpress
+       MYSQL_DATABASE: wordpress
+       MYSQL_USER: wordpress
+       MYSQL_PASSWORD: wordpress
+   wordpress:
+     depends_on:
+       - db
+       - mailslurper
+     image: wordpress:php5.6-apache-xdebug
+     build:
+       context: ../wordpress/php5.6/apache
+       args:
+         idekey: VSCODE
+     volumes:
+       - .:/var/www/html/wp-content/plugins/PLUGIN-DIRECTORY/
+     ports:
+       - "80:80"
+     restart: always
+     environment:
+       WORDPRESS_DB_HOST: db:3306
+       WORDPRESS_DB_PASSWORD: wordpress
+       XDEBUG_CONFIG: remote_host=docker.for.mac.localhost remote_log=/tmp/xdebug.log
+volumes:
+  email_verification_db:
